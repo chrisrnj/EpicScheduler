@@ -127,7 +127,7 @@ public class EpicScheduler extends JavaPlugin {
         if (runningSchedules.isEmpty()) {
             logger.log("No saved schedules were found.");
         } else {
-            logger.log(runningSchedules.size() + " schedules were set from config.");
+            logger.log(runningSchedules.size() + (runningSchedules.size() == 1 ? " schedule was" : " schedules were") + " set from config.");
         }
         return true;
     }
@@ -328,7 +328,7 @@ public class EpicScheduler extends JavaPlugin {
                         # If the date is due when the server is offline, the results are ran the next time the server goes online.
                         # Schedules are deleted once their dates are due.
                         # Here's an example of how to set a schedule:
-                        '2100-09-08 7:54:24':
+                        '2100-09-08 19:54:24':
                           Boss Bars: # Available results: Action Bars, Boss Bars, Chat Messages, Commands and Titles.
                             Target: EVERYONE # To who this result will happen. Available: EVERYONE, <worldName>, <playerUUID>, <world1,world2...>, and <player1,player2...>.
                             Pick: RANDOM # Tells that a RANDOM bar should be picked. Use ALL to send all results at once.
