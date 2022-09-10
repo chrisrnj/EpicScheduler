@@ -52,7 +52,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class EpicScheduler extends JavaPlugin {
-    public static final @NotNull DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    public static final @NotNull DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final @NotNull HashMap<Schedule, BukkitTask> runningSchedules = new HashMap<>();
     private static final @NotNull Path folder = Paths.get("plugins", "EpicScheduler");
     private static final @NotNull Logger logger = new Logger("&8[&cEpicScheduler&8]&e ");
