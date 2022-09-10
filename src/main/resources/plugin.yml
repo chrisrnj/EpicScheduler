@@ -1,0 +1,22 @@
+api-version: '1.13'
+author: 'Epicnicity322'
+depend: [ EpicPluginLib ]
+description: 'Allows you to schedule action bars, boss bars, chat messages, commands and titles, every a certain amount of ticks, hours or days.'
+main: com.epicnicity322.epicscheduler.EpicScheduler
+name: 'EpicScheduler'
+softdepend: [ PlaceholderAPI ]
+version: '${project.version}'
+
+commands:
+  epicscheduler:
+    aliases: [ scheduler, schedule ]
+    description: "EpicScheduler main command."
+    permission: epicscheduler.help
+
+permissions:
+  epicscheduler.op:
+    description: All permissions of EpicScheduler.
+    default: op
+    children:
+      epicscheduler.help: true
+      epicscheduler.reset: true
