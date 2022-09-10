@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.epicnicity322.epicscheduler.command;
+package com.epicnicity322.epicscheduler.command.subcommand;
 
 import com.epicnicity322.epicpluginlib.bukkit.command.Command;
 import com.epicnicity322.epicpluginlib.bukkit.command.CommandRunnable;
@@ -26,7 +26,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.jetbrains.annotations.NotNull;
 
-public class ResetCommand extends Command {
+public class ResetSubCommand extends Command {
     @Override
     public @NotNull String getName() {
         return "reset";

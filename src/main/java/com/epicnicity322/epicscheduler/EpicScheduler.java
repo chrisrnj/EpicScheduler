@@ -24,7 +24,8 @@ import com.epicnicity322.epicpluginlib.bukkit.logger.Logger;
 import com.epicnicity322.epicpluginlib.core.config.ConfigurationHolder;
 import com.epicnicity322.epicpluginlib.core.config.ConfigurationLoader;
 import com.epicnicity322.epicpluginlib.core.logger.ConsoleLogger;
-import com.epicnicity322.epicscheduler.command.ResetCommand;
+import com.epicnicity322.epicscheduler.command.ScheduleCommand;
+import com.epicnicity322.epicscheduler.command.subcommand.ResetSubCommand;
 import com.epicnicity322.epicscheduler.result.*;
 import com.epicnicity322.epicscheduler.result.type.Result;
 import com.epicnicity322.epicscheduler.result.type.ScheduleResult;
@@ -51,6 +52,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public class EpicScheduler extends JavaPlugin {
+    public static final @NotNull DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
     private static final @NotNull HashMap<Schedule, BukkitTask> runningSchedules = new HashMap<>();
     private static final @NotNull Path folder = Paths.get("plugins", "EpicScheduler");
     private static final @NotNull Logger logger = new Logger("&8[&cEpicScheduler&8]&e ");
@@ -161,7 +163,7 @@ public class EpicScheduler extends JavaPlugin {
             String sectionName = scheduleNode.getKey();
             LocalDateTime dueDate;
             try {
-                dueDate = LocalDateTime.parse(sectionName, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                dueDate = LocalDateTime.parse(sectionName, TIME_FORMATTER);
             } catch (DateTimeParseException ignored) {
                 logger.log("Schedule '" + sectionName + "' has an unknown date.", ConsoleLogger.Level.WARN);
                 continue;
@@ -295,19 +297,8 @@ public class EpicScheduler extends JavaPlugin {
         return ChatColor.translateAlternateColorCodes('&', string);
     }
 
-    @Override
-    public void onEnable() {
-        papi = Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
-        if (papi) logger.log("PlaceholderAPI was found and hooked.");
-
-        // Loading commands
-        PluginCommand mainCommand = getCommand("epicscheduler");
-        if (mainCommand == null) {
-            logger.log("Could not find 'epicscheduler' main command. Disabling plugin.", ConsoleLogger.Level.ERROR);
-            Bukkit.getPluginManager().disablePlugin(this);
-            return;
-        }
-        CommandManager.registerCommand(mainCommand, Collections.singleton(new ResetCommand()),
+    private static void loadCommands(@NotNull PluginCommand mainCommand, @Nullable PluginCommand scheduleCommand) {
+        CommandManager.registerCommand(mainCommand, Collections.singleton(new ResetSubCommand()),
                 // /epicscheduler Command.
                 (label, sender, args) -> {
                     lang.send(sender, lang.get("Help.Header"));
@@ -321,6 +312,30 @@ public class EpicScheduler extends JavaPlugin {
                     }
                     lang.send(sender, lang.get("General.Unknown Command").replace("<label>", label));
                 });
+
+        if (scheduleCommand == null) {
+            logger.log("Could not get 'schedule' command.", ConsoleLogger.Level.WARN);
+        } else {
+            var schedule = new ScheduleCommand();
+            scheduleCommand.setExecutor(schedule);
+            scheduleCommand.setTabCompleter(schedule);
+        }
+    }
+
+    @Override
+    public void onEnable() {
+        papi = Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null;
+        if (papi) logger.log("PlaceholderAPI was found and hooked.");
+
+        // Loading commands
+        PluginCommand mainCommand = getCommand("epicscheduler");
+        if (mainCommand == null) {
+            logger.log("Could not find 'epicscheduler' main command. Disabling plugin.", ConsoleLogger.Level.ERROR);
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+        loadCommands(mainCommand, getCommand("schedule"));
+        loadCommands(mainCommand, getCommand("unschedule"));
 
         logger.log("Loading config...");
         if (reloadConfigurations()) {
@@ -402,6 +417,7 @@ public class EpicScheduler extends JavaPlugin {
         private static final @NotNull ConfigurationHolder lang = new ConfigurationHolder(folder.resolve("lang.yml"),
                 """
                         General:
+                          Invalid Syntax: '&cInvalid syntax! Use &7&n/<label> <args>&r&c.'
                           No Permission: '&4You don''t have permission to do this.'
                           Prefix: '&8[&cEpicScheduler&8] '
                           Unknown Command: '&cUnknown command! Use &7&n/<label>&r&c to see the list of commands.'
@@ -412,7 +428,13 @@ public class EpicScheduler extends JavaPlugin {
                                                 
                         Reset:
                           Success: '&aAll running schedules were reset.'
-                          Error: '&4Something went wrong while reading schedules configuration! All schedules were stopped.'""");
+                          Error: '&4Something went wrong while reading schedules configuration! All schedules were stopped.'
+                                                
+                        Schedule:
+                          Error:
+                            Not A Date: '&4The value "&7<value>&r&4" is not a valid date! Use ''&ayyyy-MM-dd HH:mm:ss&4'' format!'
+                            Not A Result: '&4Result with name "&7<value>&4" was not found. Available results: &acommand&c.'
+                          """);
 
         static {
             loader.registerConfiguration(schedules);
