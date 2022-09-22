@@ -18,6 +18,7 @@
 
 package com.epicnicity322.epicscheduler.result.type;
 
+import com.epicnicity322.yamlhandler.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -61,6 +62,25 @@ public interface ScheduleResult extends Result {
             } else {
                 result.perform();
             }
+        }
+    }
+
+    @Override
+    default void set(@NotNull ConfigurationSection section) {
+        List<Result> results = results();
+        if (results.isEmpty()) return;
+
+        String target = target();
+
+        if (target != null) {
+            section.set("Target", target.equals("!EVERYONE") ? "EVERYONE" : target);
+        }
+        if (pickRandom()) {
+            section.set("Pick", "RANDOM");
+        }
+        int i = 1;
+        for (Result result : results) {
+            result.set(section.createSection(Integer.toString(i++)));
         }
     }
 

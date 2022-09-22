@@ -19,7 +19,9 @@
 package com.epicnicity322.epicscheduler.result;
 
 import com.epicnicity322.epicscheduler.result.type.TargetableResult;
+import com.epicnicity322.yamlhandler.ConfigurationSection;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.entity.Player;
@@ -44,6 +46,14 @@ public interface BossBar extends TargetableResult {
         if (previousBar != null) previousBar.removePlayer(player);
         bossBar.setProgress(progress());
         bossBar.addPlayer(player);
+    }
+
+    @Override
+    default void set(@NotNull ConfigurationSection section) {
+        section.set("Color", color());
+        section.set("Style", style());
+        section.set("Progress", progress());
+        section.set("Title", title().replace(ChatColor.COLOR_CHAR, '&'));
     }
 
     @NotNull BarColor color();

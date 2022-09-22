@@ -20,6 +20,7 @@ package com.epicnicity322.epicscheduler.result;
 
 import com.epicnicity322.epicscheduler.result.type.Result;
 import com.epicnicity322.epicscheduler.result.type.TargetableResult;
+import com.epicnicity322.yamlhandler.ConfigurationSection;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 public interface Command extends Result {
@@ -62,6 +64,23 @@ public interface Command extends Result {
                 }
             }
         }
+    }
+
+    @Override
+    default void set(@NotNull ConfigurationSection section) {
+        List<CommandValue> commandValues = values();
+        ArrayList<String> commandList = new ArrayList<>(commandValues.size());
+
+        for (CommandValue value : commandValues) {
+            String target = value.target();
+            if (target == null) {
+                commandList.add(value.command());
+            } else {
+                commandList.add(target + ';' + value.executor().name() + ';' + value.command());
+            }
+        }
+
+        section.set("Values", commandList);
     }
 
     interface CommandValue {

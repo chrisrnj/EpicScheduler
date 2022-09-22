@@ -25,6 +25,8 @@ import com.epicnicity322.epicpluginlib.core.config.ConfigurationHolder;
 import com.epicnicity322.epicpluginlib.core.config.ConfigurationLoader;
 import com.epicnicity322.epicpluginlib.core.logger.ConsoleLogger;
 import com.epicnicity322.epicscheduler.command.ScheduleCommand;
+import com.epicnicity322.epicscheduler.command.UnscheduleCommand;
+import com.epicnicity322.epicscheduler.command.subcommand.InfoSubCommand;
 import com.epicnicity322.epicscheduler.command.subcommand.ResetSubCommand;
 import com.epicnicity322.epicscheduler.result.*;
 import com.epicnicity322.epicscheduler.result.type.Result;
@@ -54,6 +56,7 @@ import java.util.*;
 public class EpicScheduler extends JavaPlugin {
     public static final @NotNull DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final @NotNull HashMap<Schedule, BukkitTask> runningSchedules = new HashMap<>();
+    private static final @NotNull Set<Schedule> unmodifiableSchedules = Collections.unmodifiableSet(runningSchedules.keySet());
     private static final @NotNull Path folder = Paths.get("plugins", "EpicScheduler");
     private static final @NotNull Logger logger = new Logger("&8[&cEpicScheduler&8]&e ");
     private static final @NotNull MessageSender lang = new MessageSender(() -> "EN", Configurations.lang.getDefaultConfiguration());
@@ -100,22 +103,59 @@ public class EpicScheduler extends JavaPlugin {
     }
 
     /**
-     * Sets a schedule to run once its time is due.
-     * <p>
-     * Schedules set here might be cancelled if all schedules are reset through {@link #resetSchedules()};
+     * Sets a schedule to run once its time is due and saves it to config.
      *
      * @param schedule The schedule to run later.
      * @throws UnsupportedOperationException If EpicScheduler was not instantiated by bukkit yet.
+     * @throws IOException                   If failed to save schedule to configuration.
      */
-    public static void setSchedule(@NotNull Schedule schedule) {
+    public static void setSchedule(@NotNull Schedule schedule) throws IOException {
         if (instance == null)
             throw new UnsupportedOperationException("Cannot run tasks while EpicScheduler is unloaded.");
-        BukkitTask previous = runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule, schedule.dueTime()));
+
+        Configuration schedules = Configurations.schedules.getConfiguration();
+        List<ScheduleResult> scheduleResults = schedule.scheduleResults();
+
+        if (scheduleResults.isEmpty()) return;
+
+        String dueDate = schedule.dueDate().format(TIME_FORMATTER);
+        schedules.set(dueDate, null); // Removing outdated schedule section.
+        ConfigurationSection section = schedules.createSection(dueDate);
+
+        for (ScheduleResult scheduleResult : schedule.scheduleResults()) {
+            scheduleResult.set(section.createSection(scheduleResult.resultName()));
+        }
+
+        Files.deleteIfExists(Configurations.schedules.getPath());
+        schedules.save(Configurations.schedules.getPath());
+
+        BukkitTask previous = runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule,
+                LocalDateTime.now().until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
         if (previous != null) previous.cancel();
+    }
+
+    public static @NotNull Set<Schedule> getSchedules() {
+        LocalDateTime now = LocalDateTime.now();
+        runningSchedules.keySet().removeIf((schedule) -> now.until(schedule.dueDate(), ChronoUnit.SECONDS) <= 0);
+        return unmodifiableSchedules;
+    }
+
+    public static void cancelSchedule(@NotNull Schedule schedule) throws IOException {
+        // Do not call remove straight away, because config save might fail.
+        BukkitTask task = runningSchedules.get(schedule);
+        if (task == null) return;
+        Configuration config = Configurations.schedules.getConfiguration();
+        config.set(schedule.dueDate().format(TIME_FORMATTER), null);
+        Files.deleteIfExists(Configurations.schedules.getPath());
+        config.save(Configurations.schedules.getPath());
+        task.cancel();
+        runningSchedules.remove(schedule);
+        logger.log("Schedule with due date " + schedule.dueDate() + " was cancelled and removed from config.");
     }
 
     /**
      * Cancels all running schedules, reloads configurations, and resets the schedules saved in config {@link Configurations#schedules}.
+     * <p>
      *
      * @return Whether schedules were set successfully.
      */
@@ -131,7 +171,7 @@ public class EpicScheduler extends JavaPlugin {
                 entry.getValue().cancel();
                 return true;
             });
-            logger.log(size + " already running schedules were cancelled.");
+            logger.log(size + " already running schedule" + (size == 1 ? " was" : "s were") + " cancelled.");
         }
 
         if (reloadConfigurations()) {
@@ -139,11 +179,14 @@ public class EpicScheduler extends JavaPlugin {
             return false;
         }
 
-        // Read schedules from config and set them
-        for (Schedule schedule : parseSchedules()) {
-            setSchedule(schedule);
-        }
+        List<Schedule> schedules = parseSchedules();
+        LocalDateTime now = LocalDateTime.now();
 
+        // Read schedules from config and set them
+        for (Schedule schedule : schedules) {
+            runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule,
+                    now.until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
+        }
         if (runningSchedules.isEmpty()) {
             logger.log("No saved schedules were found.");
         } else {
@@ -168,7 +211,6 @@ public class EpicScheduler extends JavaPlugin {
                 logger.log("Schedule '" + sectionName + "' has an unknown date.", ConsoleLogger.Level.WARN);
                 continue;
             }
-            long dueTicks = ChronoUnit.SECONDS.between(LocalDateTime.now(), dueDate) * 20;
             List<ScheduleResult> scheduleResults = new ArrayList<>();
 
             for (Map.Entry<String, Object> resultNode : section.getNodes().entrySet()) {
@@ -178,16 +220,11 @@ public class EpicScheduler extends JavaPlugin {
                 }
             }
 
-            if (dueTicks <= 0) {
-                dueTicks = 0;
-                toRemove.add(sectionName);
-            }
-            schedules.add(new Schedule(dueTicks, Collections.unmodifiableList(scheduleResults)));
+            if (LocalDateTime.now().until(dueDate, ChronoUnit.SECONDS) <= 0) toRemove.add(sectionName);
+            schedules.add(new Schedule(dueDate, Collections.unmodifiableList(scheduleResults)));
         }
 
-        for (String key : toRemove) {
-            schedulesConfig.set(key, null);
-        }
+        for (String key : toRemove) schedulesConfig.set(key, null);
 
         if (!toRemove.isEmpty()) {
             try {
@@ -297,8 +334,8 @@ public class EpicScheduler extends JavaPlugin {
         return ChatColor.translateAlternateColorCodes('&', string);
     }
 
-    private static void loadCommands(@NotNull PluginCommand mainCommand, @Nullable PluginCommand scheduleCommand) {
-        CommandManager.registerCommand(mainCommand, Collections.singleton(new ResetSubCommand()),
+    private static void loadCommands(@NotNull PluginCommand mainCommand, @Nullable PluginCommand scheduleCommand, @Nullable PluginCommand unscheduleCommand) {
+        CommandManager.registerCommand(mainCommand, Set.of(new ResetSubCommand(), new InfoSubCommand()),
                 // /epicscheduler Command.
                 (label, sender, args) -> {
                     lang.send(sender, lang.get("Help.Header"));
@@ -320,6 +357,13 @@ public class EpicScheduler extends JavaPlugin {
             scheduleCommand.setExecutor(schedule);
             scheduleCommand.setTabCompleter(schedule);
         }
+        if (unscheduleCommand == null) {
+            logger.log("Could not get 'unschedule' command.", ConsoleLogger.Level.WARN);
+        } else {
+            var unschedule = new UnscheduleCommand();
+            unscheduleCommand.setExecutor(unschedule);
+            unscheduleCommand.setTabCompleter(unschedule);
+        }
     }
 
     @Override
@@ -334,8 +378,7 @@ public class EpicScheduler extends JavaPlugin {
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
-        loadCommands(mainCommand, getCommand("schedule"));
-        loadCommands(mainCommand, getCommand("unschedule"));
+        loadCommands(mainCommand, getCommand("schedule"), getCommand("unschedule"));
 
         logger.log("Loading config...");
         if (reloadConfigurations()) {
@@ -416,25 +459,67 @@ public class EpicScheduler extends JavaPlugin {
                               Text: '&aHello there!'""");
         private static final @NotNull ConfigurationHolder lang = new ConfigurationHolder(folder.resolve("lang.yml"),
                 """
+                        # Global variables: <label>
+                        # All messages can have <noprefix> property at the start to send the message without a prefix.
+                        # All messages can have a cooldown with property <cooldown=TIME> where 'TIME' is the cooldown time in MILLIS.
+                        # Properties will be removed before the message is sent.
+                        # Example: '<cooldown=5000><noprefix> Testing' outputs just 'Testing'.
+                                                
                         General:
-                          Invalid Syntax: '&cInvalid syntax! Use &7&n/<label> <args>&r&c.'
                           No Permission: '&4You don''t have permission to do this.'
                           Prefix: '&8[&cEpicScheduler&8] '
-                          Unknown Command: '&cUnknown command! Use &7&n/<label>&r&c to see the list of commands.'
+                          Unknown Command: '&4Unknown command! Use &7&n/<label>&r&4 to see the list of commands.'
                                                 
                         Help:
                           Header: '&6List of commands:'
+                          Reset: '<noprefix> &7&n/<label> info <date>&r&8 >> &e Show info about a schedule.'
                           Reset: '<noprefix> &7&n/<label> reset&r&8 >> &e Resets all schedules from config.'
                                                 
+                        Info:
+                          Error:
+                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> info <date>&r&4'
+                            # Variables: <date>
+                            Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
+                          # Variables: <date>
+                          Header: '&7Results to happen in <date>:'
+                          
                         Reset:
                           Success: '&aAll running schedules were reset.'
                           Error: '&4Something went wrong while reading schedules configuration! All schedules were stopped.'
                                                 
                         Schedule:
                           Error:
+                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> <date> <result> [target] <resultValue>&r&4.'
+                            # Variables: <value>
                             Not A Date: '&4The value "&7<value>&r&4" is not a valid date! Use ''&ayyyy-MM-dd HH:mm:ss&4'' format!'
-                            Not A Result: '&4Result with name "&7<value>&4" was not found. Available results: &acommand&c.'
-                          """);
+                            # Variables: <value>, <resultTypes>
+                            Not A Result: '&4Result with name "&7<value>&4" was not found. Available results: &a<resultTypes>&c.'
+                            # Variables: <date>, <target>
+                            Title Syntax: "&4Titles and subtitles must be enclosed in &7\\"&4quotes&7\\"&4! For example:\\n&a/<label> <date> title <target> \\"This is title\\" \\"This is subtitle\\"&4."
+                            Default: '&4An unknown error occurred while setting this schedule.'
+                          # Variables for notice keys: <date>, <target>, <title>
+                          Notice:
+                            Boss Bar Syntax: "&7You can add the bar color, style, and progress to the last three arguments. For example:\\n&a/<label> <date> bossbar <target> <title> PINK SOLID 1.0&7."
+                            # Variables: <subtitle>
+                            Title Syntax: "&7You can add the title's fade in, stay, and fade out to the last three arguments. For example:\\n&a/<label> <date> title <target> <title> <subtitle> 10 70 20&7."
+                          # Variables for success keys: <date>, <target>
+                          Success:
+                            # Variables: <title>, <color>, <style>, <progress>
+                            Boss Bar: '&2Boss Bar set to perform on &a<date>&2 with title &7"<title>&r&7"&2, color &a<color>&2, style &a<style>&2, and progress &a<progress>&2 to target &a<target>&2.'
+                            # Variables: <title>, <subtitle>, <fadeIn>, <stay>, <fadeOut>
+                            Title: '&2Title set to perform on &a<date>&2 with title &7"<title>&r&7"&2, subtitle &7"<subtitle>&r&7"&2, fade in &a<fadeIn>&2, stay &a<stay>&2, and fade out &a<fadeOut>&2 to target &a<target>&2.'
+                            # Variables: <result>, <value>
+                            Default: '&2<result> set to perform on &a<date>&2 with value &7"<value>&r&7"&2 to target &a<target>&2.'
+                                                
+                        Unschedule:
+                          Error:
+                            # Variables: <date>
+                            Default: '&4An IO error occurred while unscheduling &7<date>&4 schedule.'
+                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> <date>&r&4.'
+                            # Variables: <date>
+                            Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
+                          # Variables: <date>, <results>
+                          Success: '&2Schedule with due date &7<date>&2 and results &7<results>&2 was cancelled and removed from schedules.yml successfully.'""");
 
         static {
             loader.registerConfiguration(schedules);

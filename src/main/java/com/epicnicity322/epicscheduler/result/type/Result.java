@@ -18,6 +18,7 @@
 
 package com.epicnicity322.epicscheduler.result.type;
 
+import com.epicnicity322.yamlhandler.ConfigurationSection;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -27,4 +28,6 @@ public interface Result {
     @NotNull String resultName();
 
     void perform();
+
+    void set(@NotNull ConfigurationSection section);
 }

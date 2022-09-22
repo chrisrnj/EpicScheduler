@@ -19,6 +19,8 @@
 package com.epicnicity322.epicscheduler.result;
 
 import com.epicnicity322.epicscheduler.result.type.TargetableResult;
+import com.epicnicity322.yamlhandler.ConfigurationSection;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,6 +38,15 @@ public interface Title extends TargetableResult {
         String title = TargetableResult.format(player, title());
         String subtitle = TargetableResult.format(player, subtitle());
         player.sendTitle(title, subtitle, fadeIn(), stay(), fadeOut());
+    }
+
+    @Override
+    default void set(@NotNull ConfigurationSection section) {
+        section.set("Title", title().replace(ChatColor.COLOR_CHAR, '&'));
+        section.set("Subtitle", title().replace(ChatColor.COLOR_CHAR, '&'));
+        section.set("Fade In", fadeIn());
+        section.set("Stay", stay());
+        section.set("Fade Out", fadeOut());
     }
 
     @NotNull String title();

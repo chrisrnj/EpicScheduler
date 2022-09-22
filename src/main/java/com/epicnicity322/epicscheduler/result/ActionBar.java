@@ -19,8 +19,10 @@
 package com.epicnicity322.epicscheduler.result;
 
 import com.epicnicity322.epicscheduler.result.type.TargetableResult;
+import com.epicnicity322.yamlhandler.ConfigurationSection;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -36,6 +38,11 @@ public interface ActionBar extends TargetableResult {
     default void perform(@NotNull Player player) {
         String legacyText = TargetableResult.format(player, text());
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(legacyText));
+    }
+
+    @Override
+    default void set(@NotNull ConfigurationSection section) {
+        section.set("Text", text().replace(ChatColor.COLOR_CHAR, '&'));
     }
 
     @NotNull String text();

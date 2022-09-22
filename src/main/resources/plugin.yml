@@ -10,13 +10,13 @@ version: '${project.version}'
 commands:
   epicscheduler:
     aliases: [ scheduler ]
-    description: "EpicScheduler main command."
+    description: "EpicScheduler main command. When there are no arguments, help list is shown."
     permission: epicscheduler.help
   schedule:
     description: "Schedules results to happen in a date."
     permission: epicscheduler.schedule
   unschedule:
-    description: "Un-schedules previous scheduled results"
+    description: "Un-schedules previous scheduled results."
     permission: epicscheduler.schedule
 
 permissions:
@@ -25,5 +25,18 @@ permissions:
     default: op
     children:
       epicscheduler.help: true
+      epicscheduler.info: true
       epicscheduler.reset: true
       epicscheduler.schedule: true
+  epicscheduler.help:
+    default: false
+    description: Allows use of /epicscheduler.
+  epicscheduler.info:
+    default: false
+    description: Allows use of command to show results of running schedules.
+  epicscheduler.reset:
+    default: false
+    description: Allows use of command to cancel all running schedules, parse schedules from config and run them again.
+  epicscheduler.schedule:
+    default: false
+    description: Allows use of /schedule and /unschedule.

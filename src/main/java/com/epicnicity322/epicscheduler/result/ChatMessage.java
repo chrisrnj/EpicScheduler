@@ -19,6 +19,8 @@
 package com.epicnicity322.epicscheduler.result;
 
 import com.epicnicity322.epicscheduler.result.type.TargetableResult;
+import com.epicnicity322.yamlhandler.ConfigurationSection;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
@@ -34,6 +36,11 @@ public interface ChatMessage extends TargetableResult {
     @Override
     default void perform(@NotNull Player player) {
         player.sendMessage(TargetableResult.format(player, text()));
+    }
+
+    @Override
+    default void set(@NotNull ConfigurationSection section) {
+        section.set("Text", text().replace(ChatColor.COLOR_CHAR, '&'));
     }
 
     @NotNull String text();
