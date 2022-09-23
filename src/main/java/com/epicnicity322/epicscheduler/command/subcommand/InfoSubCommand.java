@@ -35,12 +35,12 @@ public class InfoSubCommand extends Command {
 
     @Override
     public int getMinArgsAmount() {
-        return 2;
+        return 3;
     }
 
     @Override
     protected @Nullable CommandRunnable getNotEnoughArgsRunnable() {
-        return (label, sender, args) -> EpicScheduler.getLanguage().send(sender, EpicScheduler.getLanguage().get("Info.Error.Invalid Syntax"));
+        return (label, sender, args) -> EpicScheduler.getLanguage().send(sender, EpicScheduler.getLanguage().get("Info.Error.Invalid Syntax").replace("<label>", label));
     }
 
     @Override
@@ -56,7 +56,7 @@ public class InfoSubCommand extends Command {
     @Override
     public void run(@NotNull String label, @NotNull CommandSender sender, @NotNull String[] args) {
         MessageSender lang = EpicScheduler.getLanguage();
-        String date = args[0] + ' ' + args[1];
+        String date = args[1] + ' ' + args[2];
         Schedule schedule = null;
         for (Schedule s : EpicScheduler.getSchedules()) {
             if (date.equals(s.dueDate().format(EpicScheduler.TIME_FORMATTER))) {
@@ -65,7 +65,7 @@ public class InfoSubCommand extends Command {
             }
         }
         if (schedule == null) {
-            lang.send(sender, lang.get("Info.Error.Unknown Schedule").replace("<date>", args[0] + " " + args[1]));
+            lang.send(sender, lang.get("Info.Error.Unknown Schedule").replace("<date>", args[1] + " " + args[2]));
             return;
         }
         lang.send(sender, lang.get("Info.Header").replace("<date>", date));

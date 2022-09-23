@@ -54,7 +54,7 @@ public class ResetSubCommand extends Command {
         if (success) {
             lang.send(sender, lang.get("Reset.Success"));
         } else {
-            lang.send(sender, lang.get("Reset.Error"));
+            lang.send(sender, lang.get("Reset.Error").replace("<label>", label));
         }
     }
 }
