@@ -66,6 +66,7 @@ public class UnscheduleCommand implements CommandExecutor, TabCompleter {
             lang.send(sender, lang.get("Unschedule.Success").replace("<date>", dueDate.toString()).replace("<results>", value.scheduleResults().toString()));
         } catch (IOException e) {
             lang.send(sender, lang.get("Unschedule.Default").replace("<date>", dueDate.toString()));
+            e.printStackTrace();
         }
         return true;
     }
@@ -74,14 +75,14 @@ public class UnscheduleCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         if (args.length == 1) {
-            List<String> scheduleNames = getSchedules();
+            List<String> scheduleNames = scheduleNames();
             scheduleNames.removeIf(schedule -> !schedule.startsWith(args[0]));
             return scheduleNames;
         }
         return null;
     }
 
-    private @NotNull List<String> getSchedules() {
+    private @NotNull List<String> scheduleNames() {
         Set<Schedule> schedules = EpicScheduler.getSchedules();
         var scheduleNames = new ArrayList<String>(schedules.size());
         for (Schedule schedule : schedules) {

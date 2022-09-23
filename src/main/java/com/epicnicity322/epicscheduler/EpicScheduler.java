@@ -113,21 +113,26 @@ public class EpicScheduler extends JavaPlugin {
         if (instance == null)
             throw new UnsupportedOperationException("Cannot run tasks while EpicScheduler is unloaded.");
 
-        Configuration schedules = Configurations.schedules.getConfiguration();
         List<ScheduleResult> scheduleResults = schedule.scheduleResults();
-
         if (scheduleResults.isEmpty()) return;
 
+        ConfigurationHolder schedulesHolder = Configurations.schedules;
+        // Reloading to prevent losses of any changes made to the config since last reload.
+        // If schedules config fails to load, that's no issue, because it will be replaced by the last instance of
+        //successfully loaded config. So it's safe to ignore the result.
+        Configurations.loader.loadConfigurations();
+        Configuration upToDateSchedules = schedulesHolder.getConfiguration();
         String dueDate = schedule.dueDate().format(TIME_FORMATTER);
-        schedules.set(dueDate, null); // Removing outdated schedule section.
-        ConfigurationSection section = schedules.createSection(dueDate);
 
-        for (ScheduleResult scheduleResult : schedule.scheduleResults()) {
+        upToDateSchedules.set(dueDate, null); // Removing outdated schedule section.
+        ConfigurationSection section = upToDateSchedules.createSection(dueDate);
+
+        for (ScheduleResult scheduleResult : scheduleResults) {
             scheduleResult.set(section.createSection(scheduleResult.resultName()));
         }
 
-        Files.deleteIfExists(Configurations.schedules.getPath());
-        schedules.save(Configurations.schedules.getPath());
+        Files.deleteIfExists(schedulesHolder.getPath()); // Deleting and saving config with the schedule.
+        upToDateSchedules.save(schedulesHolder.getPath());
 
         BukkitTask previous = runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule,
                 LocalDateTime.now().until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
@@ -136,6 +141,7 @@ public class EpicScheduler extends JavaPlugin {
 
     public static @NotNull Set<Schedule> getSchedules() {
         LocalDateTime now = LocalDateTime.now();
+        // Removing any already due schedules.
         runningSchedules.keySet().removeIf((schedule) -> now.until(schedule.dueDate(), ChronoUnit.SECONDS) <= 0);
         return unmodifiableSchedules;
     }
@@ -144,10 +150,17 @@ public class EpicScheduler extends JavaPlugin {
         // Do not call remove straight away, because config save might fail.
         BukkitTask task = runningSchedules.get(schedule);
         if (task == null) return;
-        Configuration config = Configurations.schedules.getConfiguration();
-        config.set(schedule.dueDate().format(TIME_FORMATTER), null);
-        Files.deleteIfExists(Configurations.schedules.getPath());
-        config.save(Configurations.schedules.getPath());
+
+        ConfigurationHolder schedulesHolder = Configurations.schedules;
+        // Reloading to prevent losses of any changes made to the config since last reload.
+        // If schedules config fails to load, that's no issue, because it will be replaced by the last instance of
+        //successfully loaded config. So it's safe to ignore the result.
+        Configurations.loader.loadConfigurations();
+        Configuration upToDateSchedules = schedulesHolder.getConfiguration();
+
+        upToDateSchedules.set(schedule.dueDate().format(TIME_FORMATTER), null);
+        Files.deleteIfExists(schedulesHolder.getPath()); // Deleting and saving config without the schedule.
+        upToDateSchedules.save(schedulesHolder.getPath());
         task.cancel();
         runningSchedules.remove(schedule);
         logger.log("Schedule with due date " + schedule.dueDate() + " was cancelled and removed from config.");
@@ -385,6 +398,7 @@ public class EpicScheduler extends JavaPlugin {
             logger.log("Schedules config failed to load! No schedules were set.", ConsoleLogger.Level.ERROR);
             logger.log("Once you fix the configuration, use '/scheduler reset' to reset schedules.", ConsoleLogger.Level.ERROR);
         } else {
+            logger.log("Configuration loaded successfully. Schedules will be set when the server is done loading.");
             // Running in a task makes sure the calculations of remaining due ticks of schedules are correct.
             Bukkit.getScheduler().runTaskAsynchronously(this, EpicScheduler::resetSchedules);
         }
@@ -482,10 +496,11 @@ public class EpicScheduler extends JavaPlugin {
                             Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
                           # Variables: <date>
                           Header: '&7Results to happen in <date>:'
-                          
+                                                
                         Reset:
                           Success: '&aAll running schedules were reset.'
-                          Error: '&4Something went wrong while reading schedules configuration! All schedules were stopped.'
+                          Error: '&4Something went wrong while reading schedules configuration! All schedules were stopped.
+                           &cCheck console to see if there are any issues with the &oYAML Syntax&c. Once you fix the issue, type &7/<label> reset&c again to resume schedules.'
                                                 
                         Schedule:
                           Error:
