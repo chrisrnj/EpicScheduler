@@ -9,7 +9,7 @@ version: '${project.version}'
 
 commands:
   epicscheduler:
-    aliases: [ scheduler ]
+    aliases: [ es ]
     description: "EpicScheduler main command. When there are no arguments, help list is shown."
     permission: epicscheduler.help
   schedule:
