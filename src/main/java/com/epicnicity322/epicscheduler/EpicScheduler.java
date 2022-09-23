@@ -352,7 +352,14 @@ public class EpicScheduler extends JavaPlugin {
                 // /epicscheduler Command.
                 (label, sender, args) -> {
                     lang.send(sender, lang.get("Help.Header"));
-                    lang.send(sender, lang.get("Help.Reset").replace("<label>", label));
+                    if (sender.hasPermission("epicscheduler.info"))
+                        lang.send(sender, lang.get("Help.Info").replace("<label>", label));
+                    if (sender.hasPermission("epicscheduler.reset"))
+                        lang.send(sender, lang.get("Help.Reset").replace("<label>", label));
+                    if (sender.hasPermission("epicscheduler.schedule")) {
+                        lang.send(sender, lang.get("Help.Schedule").replace("<label>", label));
+                        lang.send(sender, lang.get("Help.Unschedule").replace("<label>", label));
+                    }
                 },
                 // Unknown command
                 (label, sender, args) -> {
@@ -486,8 +493,10 @@ public class EpicScheduler extends JavaPlugin {
                                                 
                         Help:
                           Header: '&6List of commands:'
-                          Reset: '<noprefix> &7&n/<label> info <date>&r&8 >> &e Show info about a schedule.'
-                          Reset: '<noprefix> &7&n/<label> reset&r&8 >> &e Resets all schedules from config.'
+                          Info: '<noprefix> &7&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&r&8 >> &eShow info about a schedule.'
+                          Reset: '<noprefix> &7&n/<label> reset&r&8 >> &eResets all schedules from config.'
+                          Schedule: '<noprefix> &7&n/schedule <date> <result> [target] <resultValue>&r&8 >> &eSet a schedule.'
+                          Unschedule: '<noprefix> &7&n/unschedule <yyyy-MM-dd> <HH:mm:ss>&r&8 >> &eCancel a schedule.'
                                                 
                         Info:
                           Error:
