@@ -140,7 +140,6 @@ public class ScheduleCommand implements CommandExecutor, TabCompleter {
                         .replace("<target>", args[3]).replace("<value>", message));
                 return singleResult("Chat Messages", new ChatMessage.Record(message), target(args));
             case "title":
-                System.out.println(Arrays.asList(args));
                 String[] titleAndSubtitle = findTitleAndSubtitle(args);
 
                 if (titleAndSubtitle == null) {
