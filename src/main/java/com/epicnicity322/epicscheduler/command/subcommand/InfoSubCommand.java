@@ -69,8 +69,9 @@ public class InfoSubCommand extends Command {
             for (Schedule s : runningSchedules) {
                 entries.append(separator).append(entryColor).append(s.dueDate().format(EpicScheduler.TIME_FORMATTER));
             }
+            entries.append(lang.get("Info.List.Period"));
 
-            lang.send(sender, lang.get("Info.List.Header").replace("<amount>", Integer.toString(runningSchedules.size())));
+            lang.send(sender, lang.get("Info.List.Header." + (runningSchedules.size() == 1 ? "Singular": "Plural")).replace("<amount>", Integer.toString(runningSchedules.size())));
             lang.send(sender, false, entries.substring(separator.length()));
             lang.send(sender, lang.get("Info.List.Footer").replace("<label>", label));
             return;

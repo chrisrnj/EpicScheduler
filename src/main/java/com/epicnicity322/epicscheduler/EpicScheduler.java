@@ -499,22 +499,25 @@ public class EpicScheduler extends JavaPlugin {
                           Unschedule: '<noprefix> &7&n/unschedule <yyyy-MM-dd> <HH:mm:ss>&r&8 >> &eCancel a schedule.'
                                                 
                         Info:
-                          # /es info
+                          # Command "/es info"
                           List:
                             # Variables: <amount>
-                            Header: '&6There are &7<amount>&6 schedules currently running:'
+                            Header:
+                              Singular: '&6There is &7<amount>&6 schedule currently running:'
+                              Plural: '&6There are &7<amount>&6 schedules currently running:'
                             Entry Color: '&a'
                             Separator: '&7, '
+                            Period: '&7.'
                             Footer: '<noprefix> &7Use &f&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&7 to see info about a specific schedule.'
                             None: '&6No running schedules were found.'
-                          # /es info <yyyy-MM-dd> <HH:mm:ss>
+                          # Command "/es info <yyyy-MM-dd> <HH:mm:ss>"
                           Specific:
                             Error:
                               Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&r&4'
                               # Variables: <date>
                               Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
                             # Variables: <date>
-                            Header: '&6Results to happen in <date>:'
+                            Header: '&6Results to happen in &7<date>&6:'
                                                 
                         Reset:
                           Success: '&aAll running schedules were reset.'
