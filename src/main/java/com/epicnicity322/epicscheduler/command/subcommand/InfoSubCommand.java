@@ -20,6 +20,7 @@ package com.epicnicity322.epicscheduler.command.subcommand;
 
 import com.epicnicity322.epicpluginlib.bukkit.command.Command;
 import com.epicnicity322.epicpluginlib.bukkit.command.CommandRunnable;
+import com.epicnicity322.epicpluginlib.bukkit.command.TabCompleteRunnable;
 import com.epicnicity322.epicpluginlib.bukkit.lang.MessageSender;
 import com.epicnicity322.epicscheduler.EpicScheduler;
 import com.epicnicity322.epicscheduler.Schedule;
@@ -27,20 +28,12 @@ import org.bukkit.command.CommandSender;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+
 public class InfoSubCommand extends Command {
     @Override
     public @NotNull String getName() {
         return "info";
-    }
-
-    @Override
-    public int getMinArgsAmount() {
-        return 3;
-    }
-
-    @Override
-    protected @Nullable CommandRunnable getNotEnoughArgsRunnable() {
-        return (label, sender, args) -> EpicScheduler.getLanguage().send(sender, EpicScheduler.getLanguage().get("Info.Error.Invalid Syntax").replace("<label>", label));
     }
 
     @Override
@@ -56,6 +49,32 @@ public class InfoSubCommand extends Command {
     @Override
     public void run(@NotNull String label, @NotNull CommandSender sender, @NotNull String[] args) {
         MessageSender lang = EpicScheduler.getLanguage();
+
+        if (args.length > 1) {
+            if (args.length < 3) {
+                lang.send(sender, lang.get("Info.Specific.Error.Invalid Syntax").replace("<label>", label));
+                return;
+            }
+        } else {
+            // List running schedules.
+            Set<Schedule> runningSchedules = EpicScheduler.getSchedules();
+            if (runningSchedules.isEmpty()) {
+                return;
+            }
+            StringBuilder entries = new StringBuilder();
+            String entryColor = lang.get("Info.List.Entry Color");
+            String separator = lang.get("Info.List.Separator");
+
+            for (Schedule s : runningSchedules) {
+                entries.append(separator).append(entryColor).append(s.dueDate().format(EpicScheduler.TIME_FORMATTER));
+            }
+
+            lang.send(sender, lang.get("Info.List.Header").replace("<amount>", Integer.toString(runningSchedules.size())));
+            lang.send(sender, false, entries.substring(separator.length()));
+            lang.send(sender, lang.get("Info.List.Footer").replace("<label>", label));
+        }
+
+        // Specific schedule info.
         String date = args[1] + ' ' + args[2];
         Schedule schedule = null;
         for (Schedule s : EpicScheduler.getSchedules()) {
@@ -65,10 +84,24 @@ public class InfoSubCommand extends Command {
             }
         }
         if (schedule == null) {
-            lang.send(sender, lang.get("Info.Error.Unknown Schedule").replace("<date>", args[1] + " " + args[2]));
+            lang.send(sender, lang.get("Info.Specific.Error.Unknown Schedule").replace("<date>", args[1] + " " + args[2]));
             return;
         }
-        lang.send(sender, lang.get("Info.Header").replace("<date>", date));
+        lang.send(sender, lang.get("Info.Specific.Header").replace("<date>", date));
         lang.send(sender, schedule.toString());
+    }
+
+    @Override
+    protected @Nullable TabCompleteRunnable getTabCompleteRunnable() {
+        return (completions, label, sender, args) -> {
+            if (args.length == 2) {
+                for (Schedule schedule : EpicScheduler.getSchedules()) {
+                    String date = schedule.dueDate().format(EpicScheduler.TIME_FORMATTER);
+                    if (date.startsWith(args[1])) {
+                        completions.add(date);
+                    }
+                }
+            }
+        };
     }
 }
