@@ -59,6 +59,7 @@ public class InfoSubCommand extends Command {
             // List running schedules.
             Set<Schedule> runningSchedules = EpicScheduler.getSchedules();
             if (runningSchedules.isEmpty()) {
+                lang.send(sender, lang.get("Info.List.None"));
                 return;
             }
             StringBuilder entries = new StringBuilder();
@@ -72,6 +73,7 @@ public class InfoSubCommand extends Command {
             lang.send(sender, lang.get("Info.List.Header").replace("<amount>", Integer.toString(runningSchedules.size())));
             lang.send(sender, false, entries.substring(separator.length()));
             lang.send(sender, lang.get("Info.List.Footer").replace("<label>", label));
+            return;
         }
 
         // Specific schedule info.
