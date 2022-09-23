@@ -491,7 +491,7 @@ public class EpicScheduler extends JavaPlugin {
                                                 
                         Info:
                           Error:
-                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> info <date>&r&4'
+                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&r&4'
                             # Variables: <date>
                             Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
                           # Variables: <date>
@@ -530,7 +530,7 @@ public class EpicScheduler extends JavaPlugin {
                           Error:
                             # Variables: <date>
                             Default: '&4An IO error occurred while unscheduling &7<date>&4 schedule.'
-                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> <date>&r&4.'
+                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> <yyyy-MM-dd> <HH:mm:ss>&r&4.'
                             # Variables: <date>
                             Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
                           # Variables: <date>, <results>
