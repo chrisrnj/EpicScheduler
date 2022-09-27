@@ -24,6 +24,7 @@ import com.epicnicity322.epicpluginlib.bukkit.logger.Logger;
 import com.epicnicity322.epicpluginlib.core.config.ConfigurationHolder;
 import com.epicnicity322.epicpluginlib.core.config.ConfigurationLoader;
 import com.epicnicity322.epicpluginlib.core.logger.ConsoleLogger;
+import com.epicnicity322.epicpluginlib.core.util.PathUtils;
 import com.epicnicity322.epicscheduler.command.ScheduleCommand;
 import com.epicnicity322.epicscheduler.command.UnscheduleCommand;
 import com.epicnicity322.epicscheduler.command.subcommand.InfoSubCommand;
@@ -121,32 +122,34 @@ public class EpicScheduler extends JavaPlugin {
         if (scheduleResults.isEmpty()) return;
 
         ConfigurationHolder schedulesHolder = Configurations.schedules;
-        // Reloading to prevent losses of any changes made to the config since last reload.
-        // If schedules config fails to load, that's no issue, because it will be replaced by the last instance of
-        //successfully loaded config. So it's safe to ignore the result.
-        Configurations.loader.loadConfigurations();
-        Configuration upToDateSchedules = schedulesHolder.getConfiguration();
-        String dueDate = schedule.dueDate().format(TIME_FORMATTER);
+        synchronized (EpicScheduler.class) {
+            // Reloading to prevent losses of any changes made to the config since last reload.
+            // If schedules config fails to load, that's no issue, because it will be replaced by the last instance of
+            //successfully loaded config. So it's safe to ignore the result.
+            Configurations.loader.loadConfigurations();
+            Configuration upToDateSchedules = schedulesHolder.getConfiguration();
+            String dueDate = schedule.formatted();
 
-        upToDateSchedules.set(dueDate, null); // Removing outdated schedule section.
-        ConfigurationSection section = upToDateSchedules.createSection(dueDate);
+            upToDateSchedules.set(dueDate, null); // Removing outdated schedule section.
+            ConfigurationSection section = upToDateSchedules.createSection(dueDate);
 
-        long repeat = schedule.repeat();
-        if (repeat != 0) {
-            section.set("Repeat", repeat + (repeat == 1 ? " second" : "seconds"));
-            section.set("Skip Missed Repeats", schedule.skipMissedRepeats());
+            long repeat = schedule.repeat();
+            if (repeat != 0) {
+                section.set("Repeat", repeat + (repeat == 1 ? " second" : "seconds"));
+                section.set("Skip Missed Repeats", schedule.skipMissedRepeats());
+            }
+
+            for (ScheduleResult scheduleResult : scheduleResults) {
+                scheduleResult.set(section.createSection(scheduleResult.resultName()));
+            }
+
+            Files.deleteIfExists(schedulesHolder.getPath()); // Deleting and saving config with the schedule.
+            upToDateSchedules.save(schedulesHolder.getPath());
+
+            BukkitTask previous = runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule,
+                    LocalDateTime.now().until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
+            if (previous != null) previous.cancel();
         }
-
-        for (ScheduleResult scheduleResult : scheduleResults) {
-            scheduleResult.set(section.createSection(scheduleResult.resultName()));
-        }
-
-        Files.deleteIfExists(schedulesHolder.getPath()); // Deleting and saving config with the schedule.
-        upToDateSchedules.save(schedulesHolder.getPath());
-
-        BukkitTask previous = runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule,
-                LocalDateTime.now().until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
-        if (previous != null) previous.cancel();
     }
 
     public static @NotNull Set<Schedule> getSchedules() {
@@ -162,17 +165,19 @@ public class EpicScheduler extends JavaPlugin {
         if (task == null) return;
 
         ConfigurationHolder schedulesHolder = Configurations.schedules;
-        // Reloading to prevent losses of any changes made to the config since last reload.
-        // If schedules config fails to load, that's no issue, because it will be replaced by the last instance of
-        //successfully loaded config. So it's safe to ignore the result.
-        Configurations.loader.loadConfigurations();
-        Configuration upToDateSchedules = schedulesHolder.getConfiguration();
+        synchronized (EpicScheduler.class) {
+            // Reloading to prevent losses of any changes made to the config since last reload.
+            // If schedules config fails to load, that's no issue, because it will be replaced by the last instance of
+            //successfully loaded config. So it's safe to ignore the result.
+            Configurations.loader.loadConfigurations();
+            Configuration upToDateSchedules = schedulesHolder.getConfiguration();
 
-        upToDateSchedules.set(schedule.dueDate().format(TIME_FORMATTER), null);
-        Files.deleteIfExists(schedulesHolder.getPath()); // Deleting and saving config without the schedule.
-        upToDateSchedules.save(schedulesHolder.getPath());
-        task.cancel();
-        runningSchedules.remove(schedule);
+            upToDateSchedules.set(schedule.formatted(), null);
+            Files.deleteIfExists(schedulesHolder.getPath()); // Deleting and saving config without the schedule.
+            upToDateSchedules.save(schedulesHolder.getPath());
+            task.cancel();
+            runningSchedules.remove(schedule);
+        }
         logger.log("Schedule with due date " + schedule.dueDate() + " was cancelled and removed from config.");
     }
 
@@ -435,6 +440,14 @@ public class EpicScheduler extends JavaPlugin {
             return;
         }
         loadCommands(mainCommand, getCommand("schedule"), getCommand("unschedule"));
+
+        try {
+            Path examplePath = folder.resolve("schedules-example-always-up-to-date.yml");
+            Files.deleteIfExists(examplePath);
+            PathUtils.write(Configurations.schedules.getContents(), examplePath);
+        } catch (IOException e) {
+            logger.log("Unable to create/update schedules-example-always-up-to-date.yml", ConsoleLogger.Level.WARN);
+        }
 
         logger.log("Loading config...");
         if (reloadConfigurations()) {
