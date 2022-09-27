@@ -135,7 +135,7 @@ public class EpicScheduler extends JavaPlugin {
 
             long repeat = schedule.repeat();
             if (repeat != 0) {
-                section.set("Repeat", repeat + (repeat == 1 ? " second" : "seconds"));
+                section.set("Repeat", repeat + (repeat == 1 ? " second" : " seconds"));
                 section.set("Skip Missed Repeats", schedule.skipMissedRepeats());
             }
 
@@ -375,10 +375,10 @@ public class EpicScheduler extends JavaPlugin {
         String unit = repeat.substring(space + 1);
 
         return switch (unit) {
-            case "second", "seconds" -> time * 20;
-            case "minute", "minutes" -> time * 1200;
-            case "hour", "hours" -> time * 72000;
-            case "day", "days" -> time * 1728000;
+            case "second", "seconds" -> time;
+            case "minute", "minutes" -> time * 60;
+            case "hour", "hours" -> time * 3600;
+            case "day", "days" -> time * 86400;
             // unknown time unit
             default -> 0;
         };
