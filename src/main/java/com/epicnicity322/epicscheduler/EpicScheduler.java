@@ -131,6 +131,12 @@ public class EpicScheduler extends JavaPlugin {
         upToDateSchedules.set(dueDate, null); // Removing outdated schedule section.
         ConfigurationSection section = upToDateSchedules.createSection(dueDate);
 
+        long repeat = schedule.repeat();
+        if (repeat != 0) {
+            section.set("Repeat", repeat + (repeat == 1 ? " second" : "seconds"));
+            section.set("Skip Missed Repeats", schedule.skipMissedRepeats());
+        }
+
         for (ScheduleResult scheduleResult : scheduleResults) {
             scheduleResult.set(section.createSection(scheduleResult.resultName()));
         }
