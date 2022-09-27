@@ -67,14 +67,9 @@ public record Schedule(@NotNull LocalDateTime dueDate,
 
         if (repeat != 0) {
             LocalDateTime repeatDate = dueDate.plusSeconds(repeat);
-            LocalDateTime now = LocalDateTime.now();
-
-            // Since missed schedules perform immediately, repeat date should be updated accordingly.
-            if (repeatDate.isBefore(now)) {
-                repeatDate = repeatDate.plusSeconds(repeat);
-            }
 
             if (skipMissedRepeats) {
+                LocalDateTime now = LocalDateTime.now();
                 while (repeatDate.isBefore(now)) {
                     repeatDate = repeatDate.plusSeconds(repeat);
                 }

@@ -476,9 +476,10 @@ public class EpicScheduler extends JavaPlugin {
                           # You can add the 'Repeat' setting.
                           # Format is <time> <unit>. Available units: days, day, hours, hour, minutes, minute, seconds, second.
                           Repeat: 1 day # Once the date is met, the results will be rescheduled to happen in 1 day, or '2100-09-09 19:54:24'.
-                          # This schedule is set to repeat every 1 day. If I turn the server off and turn it back on 48 hours later, it will
-                          #perform the 2 missed repeats right after the server loads! When this setting is true, the schedule will perform
-                          #only once right after the server loads, instead of the amount of missed repeats.
+                          # If the server is offline when a schedule reaches its due date, it will be executed right away the next time the
+                          #server starts. If this is a repeating schedule, the schedule will execute on server start for the amount of times
+                          #it should have repeated when the server was off. Enable this to make so if this schedule is missed, on the next
+                          #start it executes only once, instead of the amount of missed repeats.
                           Skip Missed Repeats: false
                           Boss Bars: # Available results: Action Bars, Boss Bars, Chat Messages, Commands and Titles.
                             Target: EVERYONE # To who this result will happen. Available: EVERYONE, <worldName>, <playerUUID>, <world1,world2...>, and <player1,player2...>.
