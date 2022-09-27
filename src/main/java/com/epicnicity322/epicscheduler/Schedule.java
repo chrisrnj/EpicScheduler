@@ -18,22 +18,78 @@
 
 package com.epicnicity322.epicscheduler;
 
+import com.epicnicity322.epicpluginlib.core.logger.ConsoleLogger;
 import com.epicnicity322.epicscheduler.result.type.ScheduleResult;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * @param dueDate         The date the schedule will have its results performed.
  * @param scheduleResults The results to be executed.
+ * @param repeat          The repeat interval in seconds the schedule will wait before performing again. 0 if this schedule does not repeat.
  */
 public record Schedule(@NotNull LocalDateTime dueDate,
-                       @NotNull List<ScheduleResult> scheduleResults) implements Runnable {
+                       @NotNull List<ScheduleResult> scheduleResults,
+                       @Range(from = 0L, to = Long.MAX_VALUE) long repeat,
+                       boolean skipMissedRepeats) implements Runnable, Serializable {
+
+    public Schedule {
+        if (repeat < 0) throw new IllegalArgumentException("Schedule can not have a negative repeat interval.");
+    }
+
     @Override
     public void run() {
         for (ScheduleResult result : scheduleResults) {
             result.perform();
         }
+
+        // Don't want to create threads all the time on schedules that repeat fast.
+        if (repeat == 0 || repeat >= 600) {
+            new Thread(this::cancelSchedule, "Saver of " + formatted() + " schedule").start();
+        } else {
+            cancelSchedule();
+        }
+    }
+
+    private void cancelSchedule() {
+        try {
+            EpicScheduler.cancelSchedule(this);
+        } catch (IOException e) {
+            EpicScheduler.getConsoleLogger().log("Unable to remove schedule " + formatted() + " from config:", ConsoleLogger.Level.ERROR);
+            e.printStackTrace();
+            return;
+        }
+
+        if (repeat != 0) {
+            LocalDateTime repeatDate = dueDate.plusSeconds(repeat);
+            LocalDateTime now = LocalDateTime.now();
+
+            // Since missed schedules perform immediately, repeat date should be updated accordingly.
+            if (repeatDate.isBefore(now)) {
+                repeatDate = repeatDate.plusSeconds(repeat);
+            }
+
+            if (skipMissedRepeats) {
+                while (repeatDate.isBefore(now)) {
+                    repeatDate = repeatDate.plusSeconds(repeat);
+                }
+            }
+
+            try {
+                EpicScheduler.setSchedule(new Schedule(repeatDate, scheduleResults, repeat, skipMissedRepeats));
+            } catch (IOException e) {
+                EpicScheduler.getConsoleLogger().log("Unable to save repeating schedule " + formatted() + " to config:", ConsoleLogger.Level.ERROR);
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private @NotNull String formatted() {
+        return dueDate.format(EpicScheduler.TIME_FORMATTER);
     }
 }

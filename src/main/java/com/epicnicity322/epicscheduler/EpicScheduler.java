@@ -76,6 +76,10 @@ public class EpicScheduler extends JavaPlugin {
         return papi;
     }
 
+    public static @NotNull Logger getConsoleLogger() {
+        return logger;
+    }
+
     public static @NotNull MessageSender getLanguage() {
         return lang;
     }
@@ -234,7 +238,8 @@ public class EpicScheduler extends JavaPlugin {
             }
 
             if (LocalDateTime.now().until(dueDate, ChronoUnit.SECONDS) <= 0) toRemove.add(sectionName);
-            schedules.add(new Schedule(dueDate, Collections.unmodifiableList(scheduleResults)));
+            schedules.add(new Schedule(dueDate, Collections.unmodifiableList(scheduleResults),
+                    parseRepeat(section.getString("Repeat").orElse("")), section.getBoolean("Skip Missed Repeats").orElse(false)));
         }
 
         for (String key : toRemove) schedulesConfig.set(key, null);
@@ -343,6 +348,31 @@ public class EpicScheduler extends JavaPlugin {
         return new ScheduleResult.Record(name, random, Collections.unmodifiableList(results), target);
     }
 
+    private static long parseRepeat(@NotNull String repeat) {
+        int space = repeat.indexOf(' ');
+        if (space == -1) return 0;
+        long time;
+
+        try {
+            time = Long.parseLong(repeat.substring(0, space));
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+
+        if (time <= 0) return 0;
+
+        String unit = repeat.substring(space + 1);
+
+        return switch (unit) {
+            case "second", "seconds" -> time * 20;
+            case "minute", "minutes" -> time * 1200;
+            case "hour", "hours" -> time * 72000;
+            case "day", "days" -> time * 1728000;
+            // unknown time unit
+            default -> 0;
+        };
+    }
+
     private static @NotNull String color(@NotNull String string) {
         return ChatColor.translateAlternateColorCodes('&', string);
     }
@@ -413,9 +443,7 @@ public class EpicScheduler extends JavaPlugin {
 
     private static final class Configurations {
         private static final ConfigurationLoader loader = new ConfigurationLoader();
-        // # If you want to repeat you can add the 'Repeat' setting.
-        // # Format is <time> <unit>. Available units: days, hours, minutes, seconds.
-        // Repeat: 30 days # Once the date is met, the results will be rescheduled to happen in 30 days or '2100-10-08 7:54:24'.
+
         private static final @NotNull ConfigurationHolder schedules = new ConfigurationHolder(folder.resolve("schedules.yml"),
                 """
                         # Schedules results that will execute on the specified date.
@@ -426,6 +454,13 @@ public class EpicScheduler extends JavaPlugin {
                         # Schedules are deleted once their dates are due.
                         # Here's an example of how to set a schedule:
                         '2100-09-08 19:54:24':
+                          # You can add the 'Repeat' setting.
+                          # Format is <time> <unit>. Available units: days, day, hours, hour, minutes, minute, seconds, second.
+                          Repeat: 1 day # Once the date is met, the results will be rescheduled to happen in 1 day, or '2100-09-09 19:54:24'.
+                          # This schedule is set to repeat every 1 day. If I turn the server off and turn it back on 48 hours later, it will
+                          #perform the 2 missed repeats right after the server loads! When this setting is true, the schedule will perform
+                          #only once right after the server loads, instead of the amount of missed repeats.
+                          Skip Missed Repeats: false
                           Boss Bars: # Available results: Action Bars, Boss Bars, Chat Messages, Commands and Titles.
                             Target: EVERYONE # To who this result will happen. Available: EVERYONE, <worldName>, <playerUUID>, <world1,world2...>, and <player1,player2...>.
                             Pick: RANDOM # Tells that a RANDOM bar should be picked. Use ALL to send all results at once.
