@@ -75,7 +75,7 @@ public class ScheduleCommand implements CommandExecutor, TabCompleter {
         ScheduleResult scheduleResults = getScheduleResult(label, sender, resultType, args, args[0] + ' ' + args[1]);
         if (scheduleResults == null) return true;
         try {
-            EpicScheduler.setSchedule(new Schedule(dueDate, Collections.singletonList(scheduleResults)));
+            EpicScheduler.setSchedule(new Schedule(dueDate, Collections.singletonList(scheduleResults), 0, false));
         } catch (IOException ignored) {
             lang.send(sender, lang.get("Schedule.Error.Default"));
         }
