@@ -86,7 +86,7 @@ public class UnscheduleCommand implements CommandExecutor, TabCompleter {
         Set<Schedule> schedules = EpicScheduler.getSchedules();
         var scheduleNames = new ArrayList<String>(schedules.size());
         for (Schedule schedule : schedules) {
-            scheduleNames.add(schedule.dueDate().format(EpicScheduler.TIME_FORMATTER));
+            scheduleNames.add(schedule.formatted());
         }
         return scheduleNames;
     }

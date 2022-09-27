@@ -89,7 +89,7 @@ public record Schedule(@NotNull LocalDateTime dueDate,
         }
     }
 
-    private @NotNull String formatted() {
+    public @NotNull String formatted() {
         return dueDate.format(EpicScheduler.TIME_FORMATTER);
     }
 }

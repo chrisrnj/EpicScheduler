@@ -67,7 +67,7 @@ public class InfoSubCommand extends Command {
             String separator = lang.get("Info.List.Separator");
 
             for (Schedule s : runningSchedules) {
-                entries.append(separator).append(entryColor).append(s.dueDate().format(EpicScheduler.TIME_FORMATTER));
+                entries.append(separator).append(entryColor).append(s.formatted());
             }
             entries.append(lang.get("Info.List.Period"));
 
@@ -81,7 +81,7 @@ public class InfoSubCommand extends Command {
         String date = args[1] + ' ' + args[2];
         Schedule schedule = null;
         for (Schedule s : EpicScheduler.getSchedules()) {
-            if (date.equals(s.dueDate().format(EpicScheduler.TIME_FORMATTER))) {
+            if (date.equals(s.formatted())) {
                 schedule = s;
                 break;
             }
@@ -99,7 +99,7 @@ public class InfoSubCommand extends Command {
         return (completions, label, sender, args) -> {
             if (args.length == 2) {
                 for (Schedule schedule : EpicScheduler.getSchedules()) {
-                    String date = schedule.dueDate().format(EpicScheduler.TIME_FORMATTER);
+                    String date = schedule.formatted();
                     if (date.startsWith(args[1])) {
                         completions.add(date);
                     }
