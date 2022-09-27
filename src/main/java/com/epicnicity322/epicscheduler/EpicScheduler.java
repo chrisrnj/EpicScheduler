@@ -178,7 +178,6 @@ public class EpicScheduler extends JavaPlugin {
             task.cancel();
             runningSchedules.remove(schedule);
         }
-        logger.log("Schedule with due date " + schedule.dueDate() + " was cancelled and removed from config.");
     }
 
     /**
