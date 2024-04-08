@@ -43,15 +43,17 @@ public interface Title extends TargetableResult {
     @Override
     default void set(@NotNull ConfigurationSection section) {
         section.set("Title", title().replace(ChatColor.COLOR_CHAR, '&'));
-        section.set("Subtitle", title().replace(ChatColor.COLOR_CHAR, '&'));
+        section.set("Subtitle", subtitle().replace(ChatColor.COLOR_CHAR, '&'));
         section.set("Fade In", fadeIn());
         section.set("Stay", stay());
         section.set("Fade Out", fadeOut());
     }
 
-    @NotNull String title();
+    @NotNull
+    String title();
 
-    @NotNull String subtitle();
+    @NotNull
+    String subtitle();
 
     int fadeIn();
 
