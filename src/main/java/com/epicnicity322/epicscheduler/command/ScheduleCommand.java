@@ -120,7 +120,7 @@ public class ScheduleCommand implements CommandExecutor, TabCompleter {
                 // /schedule 2022-09-13 3:01:10 bossbar EVERYONE title  PINK   SOLID  1.0
                 // Args:     arg[0]     arg[1]  arg[2]  arg[3]   arg[4] arg[5] arg[6] arg[7]
                 if (args.length >= 8 && progress != null && barColors.contains(args[argLength - 3].toUpperCase(Locale.ROOT))
-                        && barStyles.contains(args[argLength - 2].toUpperCase(Locale.ROOT))) {
+                    && barStyles.contains(args[argLength - 2].toUpperCase(Locale.ROOT))) {
                     color = BarColor.valueOf(args[argLength - 3].toUpperCase(Locale.ROOT));
                     style = BarStyle.valueOf(args[argLength - 2].toUpperCase(Locale.ROOT));
                     title = join(4, argLength - 3, args);

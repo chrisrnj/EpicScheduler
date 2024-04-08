@@ -38,7 +38,8 @@ public interface Command extends Result {
         return "Command";
     }
 
-    @NotNull List<CommandValue> values();
+    @NotNull
+    List<CommandValue> values();
 
     @Override
     default void perform() {
@@ -94,21 +95,24 @@ public interface Command extends Result {
          *
          * @return "!EVERYONE", a world name, or an {@link java.util.UUID} of a player.
          */
-        @Nullable String target();
+        @Nullable
+        String target();
 
         /**
          * Who should execute this command.
          *
          * @return The person who will dispatch the command.
          */
-        @NotNull CommandValueExecutor executor();
+        @NotNull
+        CommandValueExecutor executor();
 
         /**
          * The command of this {@link CommandValue}
          *
          * @return The command that will be dispatched by the executor.
          */
-        @NotNull String command();
+        @NotNull
+        String command();
 
         enum CommandValueExecutor {
             PLAYER,

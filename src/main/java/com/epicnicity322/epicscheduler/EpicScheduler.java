@@ -146,8 +146,7 @@ public class EpicScheduler extends JavaPlugin {
             Files.deleteIfExists(schedulesHolder.getPath()); // Deleting and saving config with the schedule.
             upToDateSchedules.save(schedulesHolder.getPath());
 
-            BukkitTask previous = runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule,
-                    LocalDateTime.now().until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
+            BukkitTask previous = runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule, LocalDateTime.now().until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
             if (previous != null) previous.cancel();
         }
     }
@@ -211,8 +210,7 @@ public class EpicScheduler extends JavaPlugin {
 
         // Read schedules from config and set them
         for (Schedule schedule : schedules) {
-            runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule,
-                    now.until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
+            runningSchedules.put(schedule, Bukkit.getScheduler().runTaskLater(instance, schedule, now.until(schedule.dueDate(), ChronoUnit.SECONDS) * 20));
         }
         if (runningSchedules.isEmpty()) {
             logger.log("No saved schedules were found.");
@@ -248,8 +246,7 @@ public class EpicScheduler extends JavaPlugin {
             }
 
             if (LocalDateTime.now().until(dueDate, ChronoUnit.SECONDS) <= 0) toRemove.add(sectionName);
-            schedules.add(new Schedule(dueDate, Collections.unmodifiableList(scheduleResults),
-                    parseRepeat(section.getString("Repeat").orElse("")), section.getBoolean("Skip Missed Repeats").orElse(false)));
+            schedules.add(new Schedule(dueDate, Collections.unmodifiableList(scheduleResults), parseRepeat(section.getString("Repeat").orElse("")), section.getBoolean("Skip Missed Repeats").orElse(false)));
         }
 
         for (String key : toRemove) schedulesConfig.set(key, null);
@@ -320,8 +317,7 @@ public class EpicScheduler extends JavaPlugin {
                 targetable = false;
                 for (var node : resultNodes) {
                     if (!(node.getValue() instanceof ConfigurationSection section)) continue;
-                    List<Command.CommandValue> commandValues = section.getCollection("Values",
-                            (obj) -> Command.CommandValue.Record.parseCommandValue(obj.toString()));
+                    List<Command.CommandValue> commandValues = section.getCollection("Values", (obj) -> Command.CommandValue.Record.parseCommandValue(obj.toString()));
                     if (commandValues.isEmpty()) continue;
                     results.add(new Command.Record(Collections.unmodifiableList(commandValues)));
                 }
@@ -462,155 +458,153 @@ public class EpicScheduler extends JavaPlugin {
     private static final class Configurations {
         private static final ConfigurationLoader loader = new ConfigurationLoader();
 
-        private static final @NotNull ConfigurationHolder schedules = new ConfigurationHolder(folder.resolve("schedules.yml"),
-                """
-                        # Schedules results that will execute on the specified date.
-                        # Each schedule have results.
-                        # Dates have the following format: 'yyyy-MM-dd HH:mm:ss'
-                        # The local timezone will be used.
-                        # If the date is due when the server is offline, the results are ran the next time the server goes online.
-                        # Schedules are deleted once their dates are due.
-                        # Here's an example of how to set a schedule:
-                        '2100-09-08 19:54:24':
-                          # You can add the 'Repeat' setting.
-                          # Format is <time> <unit>. Available units: days, day, hours, hour, minutes, minute, seconds, second.
-                          Repeat: 1 day # Once the date is met, the results will be rescheduled to happen in 1 day, or '2100-09-09 19:54:24'.
-                          # If the server is offline when a schedule reaches its due date, it will be executed right away the next time the
-                          #server starts. If this is a repeating schedule, the schedule will execute on server start for the amount of times
-                          #it should have repeated when the server was off. Enable this to make so if this schedule is missed, on the next
-                          #start it executes only once, instead of the amount of missed repeats.
-                          Skip Missed Repeats: false
-                          Boss Bars: # Available results: Action Bars, Boss Bars, Chat Messages, Commands and Titles.
-                            Target: EVERYONE # To who this result will happen. Available: EVERYONE, <worldName>, <playerUUID>, <world1,world2...>, and <player1,player2...>.
-                            Pick: RANDOM # Tells that a RANDOM bar should be picked. Use ALL to send all results at once.
-                            '1': # You must number each bar that you add to 'Boss Bars'.
-                              Color: BLUE # Available: BLUE, GREEN, RED, PINK, PURPLE, WHITE, YELLOW.
-                              Style: SEGMENTED_6 # Available: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20.
-                              Progress: 1.0 # The progress of the bar. Must be 1.0 for full, and 0.0 for empty.
-                              Title: '&6Hello %player_displayname%' # The title of the boss bar. Supports PlaceHolderAPI.
-                            '2':
-                              Color: GREEN
-                              Style: SOLID
-                              Progress: 0.5
-                              Title: '&5How ya doing?'
-                          Chat Messages:
-                            # My UUID. Since names can change between schedules, only UUIDs are allowed in Target.
-                            # This is useful when you want to handle the end of VIPs in your server.
-                            Target: 1fc1bfdf-ead0-4ee9-9b40-a3f58db88552
-                            Pick: ALL
-                            '1':
-                              Text: "&9What's up, Epicnicity322?"
-                            '2':
-                              Text: "Hope everything is fine."
-                          Titles:
-                            Target: world_the_end
-                            #Pick: ALL # Pick is irrelevant here, since there's only one title, and I don't want to use random.
-                            '1':
-                              Title: '&1Hello'
-                              Subtitle: '&7How''s the dragon fight?'
-                              Fade In: 10 # Time in ticks for title to fade in.
-                              Stay: 70 # Time in ticks for title to stay.
-                              Fade Out: 20 # Time in ticks for title to fade out.
-                          Commands:
-                            # Commands are the only result which don't include Target option. By default, they are executed once in console, but
-                            #you can see more info on how to change that behavior below.
-                            Pick: RANDOM
-                            '1':
-                              Values:
-                                # You can specify a target to run the command for every target. Available: EVERYONE, <worldName>, <playerUUID>, <world1,world2...>, and <player1,player2...>.
-                                # The second argument is who will be executing the command. CONSOLE or the PLAYER.
-                                # Third argument is the command itself.
-                                # The format is: <target>;<executor>;<command>
-                                - 'EVERYONE;CONSOLE;tell %player_name% This is console whispering to you, %player_displayname%'
-                                - 'world_the_end;PLAYER;me I''m in the end fighting the dragon!'
-                                # If you don't specify a target and executor, the command will run once in console.
-                                - 'say hi everyone, from console'
-                            '2':
-                              Values:
-                                - 'say what''s up everyone'
-                          Action Bars:
-                            Target: EVERYONE
-                            '1':
-                              Text: '&aHello there!'""");
-        private static final @NotNull ConfigurationHolder lang = new ConfigurationHolder(folder.resolve("lang.yml"),
-                """
-                        # Global variables: <label>
-                        # All messages can have <noprefix> property at the start to send the message without a prefix.
-                        # All messages can have a cooldown with property <cooldown=TIME> where 'TIME' is the cooldown time in MILLIS.
-                        # Properties will be removed before the message is sent.
-                        # Example: '<cooldown=5000><noprefix> Testing' outputs just 'Testing'.
-                                                
-                        General:
-                          No Permission: '&4You don''t have permission to do this.'
-                          Prefix: '&8[&cEpicScheduler&8] '
-                          Unknown Command: '&4Unknown command! Use &7&n/<label>&r&4 to see the list of commands.'
-                                                
-                        Help:
-                          Header: '&6List of commands:'
-                          Info: '<noprefix> &7&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&r&8 >> &eShow info about a schedule.'
-                          Reset: '<noprefix> &7&n/<label> reset&r&8 >> &eResets all schedules from config.'
-                          Schedule: '<noprefix> &7&n/schedule <date> <result> [target] <resultValue>&r&8 >> &eSet a schedule.'
-                          Unschedule: '<noprefix> &7&n/unschedule <yyyy-MM-dd> <HH:mm:ss>&r&8 >> &eCancel a schedule.'
-                                                
-                        Info:
-                          # Command "/es info"
-                          List:
-                            # Variables: <amount>
-                            Header:
-                              Singular: '&6There is &7<amount>&6 schedule currently running:'
-                              Plural: '&6There are &7<amount>&6 schedules currently running:'
-                            Entry Color: '&a'
-                            Separator: '&7, '
-                            Period: '&7.'
-                            Footer: '<noprefix> &7Use &f&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&7 to see info about a specific schedule.'
-                            None: '&6No running schedules were found.'
-                          # Command "/es info <yyyy-MM-dd> <HH:mm:ss>"
-                          Specific:
-                            Error:
-                              Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&r&4'
-                              # Variables: <date>
-                              Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
-                            # Variables: <date>
-                            Header: '&6Results to happen in &7<date>&6:'
-                                                
-                        Reset:
-                          Success: '&aAll running schedules were reset.'
-                          Error: '&4Something went wrong while reading schedules configuration! All schedules were stopped.
-                           &cCheck console to see if there are any issues with the &oYAML Syntax&c. Once you fix the issue, type &7/<label> reset&c again to resume schedules.'
-                                                
-                        Schedule:
-                          Error:
-                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> <date> <result> [target] <resultValue>&r&4.'
-                            # Variables: <value>
-                            Not A Date: '&4The value "&7<value>&r&4" is not a valid date! Use ''&ayyyy-MM-dd HH:mm:ss&4'' format!'
-                            # Variables: <value>, <resultTypes>
-                            Not A Result: '&4Result with name "&7<value>&4" was not found. Available results: &a<resultTypes>&c.'
-                            # Variables: <date>, <target>
-                            Title Syntax: "&4Titles and subtitles must be enclosed in &7\\"&4quotes&7\\"&4! For example:\\n&a/<label> <date> title <target> \\"This is title\\" \\"This is subtitle\\"&4."
-                            Default: '&4An unknown error occurred while setting this schedule.'
-                          # Variables for notice keys: <date>, <target>, <title>
-                          Notice:
-                            Boss Bar Syntax: "&7You can add the bar color, style, and progress to the last three arguments. For example:\\n&a/<label> <date> bossbar <target> <title> PINK SOLID 1.0&7."
-                            # Variables: <subtitle>
-                            Title Syntax: "&7You can add the title's fade in, stay, and fade out to the last three arguments. For example:\\n&a/<label> <date> title <target> <title> <subtitle> 10 70 20&7."
-                          # Variables for success keys: <date>, <target>
-                          Success:
-                            # Variables: <title>, <color>, <style>, <progress>
-                            Boss Bar: '&2Boss Bar set to perform on &a<date>&2 with title &7"<title>&r&7"&2, color &a<color>&2, style &a<style>&2, and progress &a<progress>&2 to target &a<target>&2.'
-                            # Variables: <title>, <subtitle>, <fadeIn>, <stay>, <fadeOut>
-                            Title: '&2Title set to perform on &a<date>&2 with title &7"<title>&r&7"&2, subtitle &7"<subtitle>&r&7"&2, fade in &a<fadeIn>&2, stay &a<stay>&2, and fade out &a<fadeOut>&2 to target &a<target>&2.'
-                            # Variables: <result>, <value>
-                            Default: '&2<result> set to perform on &a<date>&2 with value &7"<value>&r&7"&2 to target &a<target>&2.'
-                                                
-                        Unschedule:
-                          Error:
-                            # Variables: <date>
-                            Default: '&4An IO error occurred while unscheduling &7<date>&4 schedule.'
-                            Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> <yyyy-MM-dd> <HH:mm:ss>&r&4.'
-                            # Variables: <date>
-                            Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
-                          # Variables: <date>, <results>
-                          Success: '&2Schedule with due date &7<date>&2 and results &7<results>&2 was cancelled and removed from schedules.yml successfully.'""");
+        private static final @NotNull ConfigurationHolder schedules = new ConfigurationHolder(folder.resolve("schedules.yml"), """
+                # Schedules results that will execute on the specified date.
+                # Each schedule have results.
+                # Dates have the following format: 'yyyy-MM-dd HH:mm:ss'
+                # The local timezone will be used.
+                # If the date is due when the server is offline, the results are ran the next time the server goes online.
+                # Schedules are deleted once their dates are due.
+                # Here's an example of how to set a schedule:
+                '2024-09-08 19:54:24':
+                  # You can add the 'Repeat' setting.
+                  # Format is <time> <unit>. Available units: days, day, hours, hour, minutes, minute, seconds, second.
+                  Repeat: 1 day # Once the date is met, the results will be rescheduled to happen in 1 day, or '2100-09-09 19:54:24'.
+                  # If the server is offline when a schedule reaches its due date, it will be executed right away the next time the
+                  #server starts. If this is a repeating schedule, the schedule will execute on server start for the amount of times
+                  #it should have repeated when the server was off. Enable this to make so if this schedule is missed, on the next
+                  #start it executes only once, instead of the amount of missed repeats.
+                  Skip Missed Repeats: false
+                  Boss Bars: # Available results: Action Bars, Boss Bars, Chat Messages, Commands and Titles.
+                    Target: EVERYONE # To who this result will happen. Available: EVERYONE, <worldName>, <playerUUID>, <world1,world2...>, and <player1,player2...>.
+                    Pick: RANDOM # Tells that a RANDOM bar should be picked. Use ALL to send all results at once.
+                    '1': # You must number each bar that you add to 'Boss Bars'.
+                      Color: BLUE # Available: BLUE, GREEN, RED, PINK, PURPLE, WHITE, YELLOW.
+                      Style: SEGMENTED_6 # Available: SOLID, SEGMENTED_6, SEGMENTED_10, SEGMENTED_12, SEGMENTED_20.
+                      Progress: 1.0 # The progress of the bar. Must be 1.0 for full, and 0.0 for empty.
+                      Title: '&6Hello %player_displayname%' # The title of the boss bar. Supports PlaceHolderAPI.
+                    '2':
+                      Color: GREEN
+                      Style: SOLID
+                      Progress: 0.5
+                      Title: '&5How ya doing?'
+                  Chat Messages:
+                    # My UUID. Since names can change between schedules, only UUIDs are allowed in Target.
+                    # This is useful when you want to handle the end of VIPs in your server.
+                    Target: 1fc1bfdf-ead0-4ee9-9b40-a3f58db88552
+                    Pick: ALL
+                    '1':
+                      Text: "&9What's up, Epicnicity322?"
+                    '2':
+                      Text: "Hope everything is fine."
+                  Titles:
+                    Target: world_the_end
+                    #Pick: ALL # Pick is irrelevant here, since there's only one title, and I don't want to use random.
+                    '1':
+                      Title: '&1Hello'
+                      Subtitle: '&7How''s the dragon fight?'
+                      Fade In: 10 # Time in ticks for title to fade in.
+                      Stay: 70 # Time in ticks for title to stay.
+                      Fade Out: 20 # Time in ticks for title to fade out.
+                  Commands:
+                    # Commands are the only result which don't include Target option. By default, they are executed once in console, but
+                    #you can see more info on how to change that behavior below.
+                    Pick: RANDOM
+                    '1':
+                      Values:
+                        # You can specify a target to run the command for every target. Available: EVERYONE, <worldName>, <playerUUID>, <world1,world2...>, and <player1,player2...>.
+                        # The second argument is who will be executing the command. CONSOLE or the PLAYER.
+                        # Third argument is the command itself.
+                        # The format is: <target>;<executor>;<command>
+                        - 'EVERYONE;CONSOLE;tell %player_name% This is console whispering to you, %player_displayname%'
+                        - 'world_the_end;PLAYER;me I''m in the end fighting the dragon!'
+                        # If you don't specify a target and executor, the command will run once in console.
+                        - 'say hi everyone, from console'
+                    '2':
+                      Values:
+                        - 'say what''s up everyone'
+                  Action Bars:
+                    Target: EVERYONE
+                    '1':
+                      Text: '&aHello there!'""");
+        private static final @NotNull ConfigurationHolder lang = new ConfigurationHolder(folder.resolve("lang.yml"), """
+                # Global variables: <label>
+                # All messages can have <noprefix> property at the start to send the message without a prefix.
+                # All messages can have a cooldown with property <cooldown=TIME> where 'TIME' is the cooldown time in MILLIS.
+                # Properties will be removed before the message is sent.
+                # Example: '<cooldown=5000><noprefix> Testing' outputs just 'Testing'.
+
+                General:
+                  No Permission: '&4You don''t have permission to do this.'
+                  Prefix: '&8[&cEpicScheduler&8] '
+                  Unknown Command: '&4Unknown command! Use &7&n/<label>&r&4 to see the list of commands.'
+
+                Help:
+                  Header: '&6List of commands:'
+                  Info: '<noprefix> &7&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&r&8 >> &eShow info about a schedule.'
+                  Reset: '<noprefix> &7&n/<label> reset&r&8 >> &eResets all schedules from config.'
+                  Schedule: '<noprefix> &7&n/schedule <date> <result> [target] <resultValue>&r&8 >> &eSet a schedule.'
+                  Unschedule: '<noprefix> &7&n/unschedule <yyyy-MM-dd> <HH:mm:ss>&r&8 >> &eCancel a schedule.'
+
+                Info:
+                  # Command "/es info"
+                  List:
+                    # Variables: <amount>
+                    Header:
+                      Singular: '&6There is &7<amount>&6 schedule currently running:'
+                      Plural: '&6There are &7<amount>&6 schedules currently running:'
+                    Entry Color: '&a'
+                    Separator: '&7, '
+                    Period: '&7.'
+                    Footer: '<noprefix> &7Use &f&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&7 to see info about a specific schedule.'
+                    None: '&6No running schedules were found.'
+                  # Command "/es info <yyyy-MM-dd> <HH:mm:ss>"
+                  Specific:
+                    Error:
+                      Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> info <yyyy-MM-dd> <HH:mm:ss>&r&4'
+                      # Variables: <date>
+                      Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
+                    # Variables: <date>
+                    Header: '&6Results to happen in &7<date>&6:'
+
+                Reset:
+                  Success: '&aAll running schedules were reset.'
+                  Error: '&4Something went wrong while reading schedules configuration! All schedules were stopped.
+                   &cCheck console to see if there are any issues with the &oYAML Syntax&c. Once you fix the issue, type &7/<label> reset&c again to resume schedules.'
+
+                Schedule:
+                  Error:
+                    Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> <date> <result> [target] <resultValue>&r&4.'
+                    # Variables: <value>
+                    Not A Date: '&4The value "&7<value>&r&4" is not a valid date! Use ''&ayyyy-MM-dd HH:mm:ss&4'' format!'
+                    # Variables: <value>, <resultTypes>
+                    Not A Result: '&4Result with name "&7<value>&4" was not found. Available results: &a<resultTypes>&c.'
+                    # Variables: <date>, <target>
+                    Title Syntax: "&4Titles and subtitles must be enclosed in &7\\"&4quotes&7\\"&4! For example:\\n&a/<label> <date> title <target> \\"This is title\\" \\"This is subtitle\\"&4."
+                    Default: '&4An unknown error occurred while setting this schedule.'
+                  # Variables for notice keys: <date>, <target>, <title>
+                  Notice:
+                    Boss Bar Syntax: "&7You can add the bar color, style, and progress to the last three arguments. For example:\\n&a/<label> <date> bossbar <target> <title> PINK SOLID 1.0&7."
+                    # Variables: <subtitle>
+                    Title Syntax: "&7You can add the title's fade in, stay, and fade out to the last three arguments. For example:\\n&a/<label> <date> title <target> <title> <subtitle> 10 70 20&7."
+                  # Variables for success keys: <date>, <target>
+                  Success:
+                    # Variables: <title>, <color>, <style>, <progress>
+                    Boss Bar: '&2Boss Bar set to perform on &a<date>&2 with title &7"<title>&r&7"&2, color &a<color>&2, style &a<style>&2, and progress &a<progress>&2 to target &a<target>&2.'
+                    # Variables: <title>, <subtitle>, <fadeIn>, <stay>, <fadeOut>
+                    Title: '&2Title set to perform on &a<date>&2 with title &7"<title>&r&7"&2, subtitle &7"<subtitle>&r&7"&2, fade in &a<fadeIn>&2, stay &a<stay>&2, and fade out &a<fadeOut>&2 to target &a<target>&2.'
+                    # Variables: <result>, <value>
+                    Default: '&2<result> set to perform on &a<date>&2 with value &7"<value>&r&7"&2 to target &a<target>&2.'
+
+                Unschedule:
+                  Error:
+                    # Variables: <date>
+                    Default: '&4An IO error occurred while unscheduling &7<date>&4 schedule.'
+                    Invalid Syntax: '&4Invalid arguments! Use &7&n/<label> <yyyy-MM-dd> <HH:mm:ss>&r&4.'
+                    # Variables: <date>
+                    Unknown Schedule: '&4Schedule with date ''&7<date>&4'' was not found running.'
+                  # Variables: <date>, <results>
+                  Success: '&2Schedule with due date &7<date>&2 and results &7<results>&2 was cancelled and removed from schedules.yml successfully.'""");
 
         static {
             loader.registerConfiguration(schedules);

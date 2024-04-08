@@ -32,7 +32,8 @@ import java.util.List;
 public interface ScheduleResult extends Result {
     boolean pickRandom();
 
-    @NotNull List<Result> results();
+    @NotNull
+    List<Result> results();
 
     /**
      * Who this result will be executed to. The options are:
@@ -44,7 +45,8 @@ public interface ScheduleResult extends Result {
      *
      * @return "!EVERYONE", a world name, or an {@link java.util.UUID} of a player.
      */
-    @Nullable String target();
+    @Nullable
+    String target();
 
     @Override
     default void perform() {

@@ -56,13 +56,16 @@ public interface BossBar extends TargetableResult {
         section.set("Title", title().replace(ChatColor.COLOR_CHAR, '&'));
     }
 
-    @NotNull BarColor color();
+    @NotNull
+    BarColor color();
 
-    @NotNull BarStyle style();
+    @NotNull
+    BarStyle style();
 
     double progress();
 
-    @NotNull String title();
+    @NotNull
+    String title();
 
     record Record(@NotNull String title, @NotNull BarColor color, @NotNull BarStyle style,
                   double progress) implements BossBar, Serializable {

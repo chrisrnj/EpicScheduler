@@ -43,7 +43,8 @@ public interface ChatMessage extends TargetableResult {
         section.set("Text", text().replace(ChatColor.COLOR_CHAR, '&'));
     }
 
-    @NotNull String text();
+    @NotNull
+    String text();
 
     record Record(@NotNull String text) implements ChatMessage, Serializable {
     }
